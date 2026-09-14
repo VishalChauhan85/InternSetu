@@ -2,13 +2,18 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import StudentDashboard from './pages/StudentDashboard';
+import IndustryDashboard from './pages/IndustryDashboard';
+import EducatorDashboard from './pages/EducatorDashboard';
 import GenericDashboard from './pages/GenericDashboard';
+import MockInterview from './pages/MockInterview';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Routes to the correct dashboard based on the logged-in user's role
 const DashboardRouter = () => {
   const { user } = useAuth();
   if (user?.role === 'student') return <StudentDashboard />;
+  if (user?.role === 'industry') return <IndustryDashboard />;
+  if (user?.role === 'educator') return <EducatorDashboard />;
   return <GenericDashboard />;
 };
 
@@ -27,12 +32,20 @@ function App() {
         }
       />
 
-      {/* Example of a role-restricted route for future expansion */}
       <Route
         path="/student/*"
         element={
           <ProtectedRoute allowedRoles={['student']}>
             <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/mock-interview"
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <MockInterview />
           </ProtectedRoute>
         }
       />

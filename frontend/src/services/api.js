@@ -60,10 +60,29 @@ export const studentAPI = {
   listCourses: (params) => api.get('/student/courses', { params }),
 };
 
+export const industryAPI = {
+  listMyOpportunities: () => api.get('/industry/opportunities'),
+  createOpportunity: (payload) => api.post('/industry/opportunities', payload),
+  getApplicants: (opportunityId) =>
+    api.get(`/industry/opportunities/${opportunityId}/applicants`),
+  updateApplicantStatus: (opportunityId, studentId, status) =>
+    api.put(`/industry/opportunities/${opportunityId}/applicants/${studentId}`, {
+      status,
+    }),
+};
+
+export const educatorAPI = {
+  listStudents: (params) => api.get('/educator/students', { params }),
+  createCourse: (payload) => api.post('/educator/courses', payload),
+  listMyCourses: () => api.get('/educator/courses'),
+  updateCourse: (id, payload) => api.put(`/educator/courses/${id}`, payload),
+};
+
 export const aiAPI = {
   analyzeResume: (payload) => api.post('/ai/resume-analysis', payload),
   suggestSkillGap: (payload) => api.post('/ai/skill-gap', payload),
   chat: (payload) => api.post('/ai/chat', payload),
+  evaluateInterview: (payload) => api.post('/ai/evaluate-interview', payload),
 };
 
 export default api;

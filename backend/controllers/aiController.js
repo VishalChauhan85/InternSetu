@@ -1,7 +1,8 @@
 /**
  * aiController.js
  * Handles AI-powered features (resume analysis, skill-gap suggestions,
- * opportunity matching, chat assistance) via external LLM providers.
+ * opportunity matching, chat assistance, mock-interview evaluation) via
+ * external LLM providers.
  *
  * NOTE: This file contains placeholder fetch functions for Gemini and Grok.
  * Wire in real API keys via .env (GEMINI_API_KEY, GROK_API_KEY) and adjust
@@ -209,10 +210,53 @@ const chatAssistant = async (req, res) => {
   }
 };
 
+// @desc    Evaluate a completed mock-interview transcript and score it
+// @route   POST /api/ai/evaluate-interview
+// @access  Private (student)
+const evaluateInterview = async (req, res) => {
+  try {
+    const { transcript, targetRole } = req.body;
+
+    if (!transcript) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide the interview transcript to evaluate',
+      });
+    }
+
+    const prompt = `You are an experienced hiring manager reviewing a mock interview transcript${
+      targetRole ? ` for the role "${targetRole}"` : ''
+    }.
+Transcript:
+"""${transcript}"""
+Provide structured, honest feedback with:
+1. Overall impression (1-2 sentences)
+2. Strengths (2-3 bullet points)
+3. Areas to improve (2-3 bullet points)
+4. A readiness score out of 10 with a one-line justification
+Respond in plain text with clear section headers.`;
+
+    const result = await getAIResponse(prompt, 'gemini');
+
+    return res.status(200).json({
+      success: true,
+      evaluation: result.text,
+      provider: result.provider,
+    });
+  } catch (error) {
+    console.error('evaluateInterview error:', error.message);
+    return res.status(503).json({
+      success: false,
+      message: 'AI service is currently unavailable. Please try again later.',
+    });
+  }
+};
+
 module.exports = {
   analyzeResume,
   suggestSkillGap,
   chatAssistant,
+  evaluateInterview,
   fetchGeminiResponse,
   fetchGrokResponse,
 };

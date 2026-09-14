@@ -7,6 +7,8 @@ const connectDB = require('./config/db');
 // Route imports
 const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
+const industryRoutes = require('./routes/industryRoutes');
+const educatorRoutes = require('./routes/educatorRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
 // Connect to MongoDB
@@ -40,6 +42,8 @@ app.get('/api/health', (req, res) => {
 // ---------- Mount Routes ----------
 app.use('/api/auth', authRoutes);
 app.use('/api/student', studentRoutes);
+app.use('/api/industry', industryRoutes);
+app.use('/api/educator', educatorRoutes);
 app.use('/api/ai', aiRoutes);
 
 // ---------- 404 Handler ----------

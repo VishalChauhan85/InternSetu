@@ -149,7 +149,7 @@ const StudentDashboard = () => {
                   <h2 className="text-base font-semibold text-slate-900">
                     Recommended Opportunities
                   </h2>
-                  <a
+                  
                     href="/opportunities"
                     className="text-xs font-medium text-indigo-900 hover:underline"
                   >
