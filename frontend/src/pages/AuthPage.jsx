@@ -15,10 +15,6 @@ const initialFormState = {
   email: '',
   password: '',
   confirmPassword: '',
-  companyName: '',
-  institutionName: '',
-  designation: '',
-  phone: '',
 };
 
 const AuthPage = () => {
@@ -40,7 +36,6 @@ const AuthPage = () => {
   }, [isAuthenticated, navigate, location]);
 
   useEffect(() => {
-    // Clear errors when switching modes or roles
     setLocalError('');
     clearAuthError();
   }, [mode, selectedRole, clearAuthError]);
@@ -58,12 +53,6 @@ const AuthPage = () => {
       if (!formData.name) return 'Full name is required';
       if (formData.password.length < 6) return 'Password must be at least 6 characters';
       if (formData.password !== formData.confirmPassword) return 'Passwords do not match';
-      if (selectedRole === 'industry' && !formData.companyName) {
-        return 'Company name is required for industry accounts';
-      }
-      if (selectedRole === 'educator' && !formData.institutionName) {
-        return 'Institution name is required for educator accounts';
-      }
     }
     return '';
   };
@@ -88,15 +77,12 @@ const AuthPage = () => {
         role: selectedRole,
       });
     } else {
+      // Hardcoded to student for public registration
       result = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: selectedRole,
-        companyName: formData.companyName,
-        institutionName: formData.institutionName,
-        designation: formData.designation,
-        phone: formData.phone,
+        role: 'student',
       });
     }
 
@@ -148,40 +134,42 @@ const AuthPage = () => {
         <div className="bg-white p-8 sm:p-10">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-slate-900">
-              {mode === 'login' ? 'Welcome back' : 'Create your account'}
+              {mode === 'login' ? 'Welcome back' : 'Create your Student account'}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
               {mode === 'login'
                 ? 'Sign in to continue to your dashboard'
-                : 'Join InternSetu as a student, industry partner, or educator'}
+                : 'Join InternSetu to explore internships and build your career.'}
             </p>
           </div>
 
-          {/* Role selector */}
-          <div className="mb-6">
-            <label className="block text-xs font-medium text-slate-600 mb-2">
-              I am signing in as
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {ROLES.map((role) => (
-                <button
-                  key={role.value}
-                  type="button"
-                  onClick={() => setSelectedRole(role.value)}
-                  className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${
-                    selectedRole === role.value
-                      ? 'border-indigo-900 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-900'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className="block font-medium">{role.label}</span>
-                  <span className="block text-xs text-slate-400 mt-0.5 leading-tight">
-                    {role.desc}
-                  </span>
-                </button>
-              ))}
+          {/* Role selector - ONLY visible during login now */}
+          {mode === 'login' && (
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-slate-600 mb-2">
+                I am signing in as
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {ROLES.map((role) => (
+                  <button
+                    key={role.value}
+                    type="button"
+                    onClick={() => setSelectedRole(role.value)}
+                    className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                      selectedRole === role.value
+                        ? 'border-indigo-900 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-900'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="block font-medium">{role.label}</span>
+                    <span className="block text-xs text-slate-400 mt-0.5 leading-tight">
+                      {role.desc}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
@@ -205,30 +193,6 @@ const AuthPage = () => {
               placeholder="you@example.com"
               autoComplete="email"
             />
-
-            {mode === 'register' && selectedRole === 'industry' && (
-              <Input
-                label="Company Name"
-                type="text"
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleChange}
-                placeholder="Acme Corp"
-                autoComplete="organization"
-              />
-            )}
-
-            {mode === 'register' && selectedRole === 'educator' && (
-              <Input
-                label="Institution Name"
-                type="text"
-                name="institutionName"
-                value={formData.institutionName}
-                onChange={handleChange}
-                placeholder="ABC Institute of Technology"
-                autoComplete="organization"
-              />
-            )}
 
             <Input
               label="Password"
@@ -276,7 +240,9 @@ const AuthPage = () => {
             <button
               type="button"
               onClick={() => {
-                setMode(mode === 'login' ? 'register' : 'login');
+                const newMode = mode === 'login' ? 'register' : 'login';
+                setMode(newMode);
+                if (newMode === 'register') setSelectedRole('student');
                 setFormData(initialFormState);
               }}
               className="text-indigo-900 font-medium hover:underline"
