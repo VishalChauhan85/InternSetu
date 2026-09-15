@@ -1,8 +1,7 @@
 /**
  * aiController.js
  * Handles AI-powered features (resume analysis, skill-gap suggestions,
- * opportunity matching, chat assistance, mock-interview evaluation) via
- * external LLM providers.
+ * opportunity matching, chat assistance) via external LLM providers.
  *
  * NOTE: This file contains placeholder fetch functions for Gemini and Grok.
  * Wire in real API keys via .env (GEMINI_API_KEY, GROK_API_KEY) and adjust
@@ -210,8 +209,8 @@ const chatAssistant = async (req, res) => {
   }
 };
 
-// @desc    Evaluate a completed mock-interview transcript and score it
-// @route   POST /api/ai/evaluate-interview
+// @desc    Evaluate a completed mock interview transcript and return scores + feedback
+// @route   POST /api/ai/mock-interview/evaluate
 // @access  Private (student)
 const evaluateInterview = async (req, res) => {
   try {
@@ -224,17 +223,29 @@ const evaluateInterview = async (req, res) => {
       });
     }
 
-    const prompt = `You are an experienced hiring manager reviewing a mock interview transcript${
-      targetRole ? ` for the role "${targetRole}"` : ''
-    }.
-Transcript:
+    const prompt = `You are an expert interview coach evaluating a mock interview transcript for the role of "${
+      targetRole || 'the target role'
+    }".
+The transcript alternates between "Recruiter" and "Candidate" lines:
 """${transcript}"""
-Provide structured, honest feedback with:
-1. Overall impression (1-2 sentences)
-2. Strengths (2-3 bullet points)
-3. Areas to improve (2-3 bullet points)
-4. A readiness score out of 10 with a one-line justification
-Respond in plain text with clear section headers.`;
+
+Evaluate the candidate's performance and respond in this exact plain-text structure:
+
+Overall Score: <a number from 1 to 10>
+
+Communication Clarity: <a number from 1 to 10> - <one-line reason>
+Technical/Role Knowledge: <a number from 1 to 10> - <one-line reason>
+Confidence & Structure: <a number from 1 to 10> - <one-line reason>
+
+Strengths:
+- <point 1>
+- <point 2>
+
+Areas to Improve:
+- <point 1>
+- <point 2>
+
+Summary: <2-3 sentence overall summary with encouragement and a concrete next step>`;
 
     const result = await getAIResponse(prompt, 'gemini');
 

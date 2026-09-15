@@ -1,9 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import AuthPage from './pages/AuthPage';
+import Auth from './pages/Auth';
 import StudentDashboard from './pages/StudentDashboard';
 import IndustryDashboard from './pages/IndustryDashboard';
 import EducatorDashboard from './pages/EducatorDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import GenericDashboard from './pages/GenericDashboard';
 import MockInterview from './pages/MockInterview';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -14,6 +15,7 @@ const DashboardRouter = () => {
   if (user?.role === 'student') return <StudentDashboard />;
   if (user?.role === 'industry') return <IndustryDashboard />;
   if (user?.role === 'educator') return <EducatorDashboard />;
+  if (user?.role === 'admin') return <AdminDashboard />;
   return <GenericDashboard />;
 };
 
@@ -21,7 +23,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/auth" element={<Auth />} />
 
       <Route
         path="/dashboard"
@@ -32,11 +34,39 @@ function App() {
         }
       />
 
+      {/* Role-restricted routes */}
       <Route
         path="/student/*"
         element={
           <ProtectedRoute allowedRoles={['student']}>
             <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/industry/*"
+        element={
+          <ProtectedRoute allowedRoles={['industry']}>
+            <IndustryDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/educator/*"
+        element={
+          <ProtectedRoute allowedRoles={['educator']}>
+            <EducatorDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
           </ProtectedRoute>
         }
       />

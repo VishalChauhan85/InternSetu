@@ -1,111 +1,125 @@
 # InternSetu — Academia-Industry Collaboration Platform
 
-Full-stack MERN app: Node.js/Express/MongoDB backend, React (Vite) + Tailwind frontend.
+A full-stack MERN application connecting students, industry partners, and educators.
 
-## Prerequisites
+## Tech Stack
+- **Backend:** Node.js, Express, MongoDB (Mongoose), JWT, Bcryptjs
+- **Frontend:** React (Vite), Tailwind CSS, Axios, React Router
 
-- Node.js 18+ and npm
-- A MongoDB database — either:
-  - **MongoDB Atlas** (free tier, cloud-hosted, easiest for beginners): https://www.mongodb.com/cloud/atlas/register
-  - or a local MongoDB install: https://www.mongodb.com/try/download/community
+## Project Structure
 
-## 1. Backend setup
+```
+internsetu/
+├── backend/
+│   ├── config/db.js
+│   ├── models/            # User, StudentProfile, StudentProgress, Opportunity, Course
+│   ├── controllers/       # auth, student, ai
+│   ├── routes/            # auth, student, ai
+│   ├── middleware/auth.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env.example
+└── frontend/
+    ├── src/
+    │   ├── services/api.js
+    │   ├── context/AuthContext.jsx
+    │   ├── components/    # Navbar, ProtectedRoute
+    │   ├── pages/          # AuthPage, StudentDashboard, GenericDashboard
+    │   ├── App.jsx
+    │   ├── main.jsx
+    │   └── index.css
+    ├── index.html
+    ├── package.json
+    ├── vite.config.js
+    ├── tailwind.config.js
+    ├── postcss.config.js
+    └── .env.example
+```
+
+## Setup Instructions
+
+### 1. Backend
 
 ```bash
 cd backend
 npm install
-```
-
-Copy the example env file and fill in real values:
-
-```bash
 cp .env.example .env
-```
-
-Edit `.env`:
-
-```
-NODE_ENV=development
-PORT=5000
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/internsetu
-JWT_SECRET=replace_this_with_a_long_random_secret_string
-JWT_EXPIRES_IN=7d
-CLIENT_URL=http://localhost:5173
-GEMINI_API_KEY=your_gemini_api_key_here
-GROK_API_KEY=your_grok_api_key_here
-```
-
-- `MONGO_URI` — from Atlas: Database > Connect > Drivers, copy the connection string, swap in your DB user's username/password, and add `/internsetu` before the `?` as the database name.
-- `JWT_SECRET` — any long random string. Quick way to generate one:
-  ```bash
-  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-  ```
-- `GEMINI_API_KEY` — get one free at https://aistudio.google.com/apikey (needed for the AI features: resume analysis, skill-gap suggestions, chat, mock-interview feedback).
-- `GROK_API_KEY` — optional fallback provider, from https://console.x.ai/. The app works fine with only Gemini configured.
-
-Run the backend:
-
-```bash
+# Edit .env and set MONGO_URI, JWT_SECRET, CLIENT_URL, and (optionally) GEMINI_API_KEY / GROK_API_KEY
 npm run dev
 ```
 
-You should see `✅ MongoDB Connected` and `🚀 InternSetu API server running on port 5000`.
-Sanity check: open http://localhost:5000/api/health — it should return a JSON success message.
+The API will run on `http://localhost:5000` by default. Health check: `GET /api/health`.
 
-## 2. Frontend setup
-
-Open a **new terminal** (leave the backend running):
+### 2. Frontend
 
 ```bash
 cd frontend
 npm install
 cp .env.example .env
-```
-
-`.env` should contain:
-
-```
-VITE_API_BASE_URL=http://localhost:5000/api
-```
-
-Run the frontend:
-
-```bash
+# Edit .env and set VITE_API_BASE_URL to your backend's /api URL
 npm run dev
 ```
 
-Open the URL Vite prints (usually http://localhost:5173).
+The app will run on `http://localhost:5173` by default.
 
-## 3. Try it out
+## Security Model & Admin Bootstrap
 
-1. Go to `/auth`, register a **student** account — this creates a `User` + an empty `StudentProfile`.
-2. Register a second account as **industry** (needs a company name) in a different browser/incognito tab, and post an opportunity.
-3. Register a third as **educator** (needs an institution name) and create a course.
-4. Log back in as the student to browse opportunities/courses and try the AI Mock Interview at `/mock-interview`.
+- **Public registration** (`POST /api/auth/register`) can only ever create a `student` account. The backend hardcodes `role: 'student'` and ignores any `role`/`companyName`/`institutionName` sent by the client — there is no role selector in the UI either.
+- **Educator and Industry accounts** are provisioned only by an authenticated Admin, via the Admin Dashboard (`POST /api/auth/admin/create-user`, protected by `protect` + `authorize('admin')`).
+- **The first Admin account** is created once per environment via `POST /api/auth/seed-admin`. This route is protected by a shared secret (not JWT, since no admin exists yet) — set `ADMIN_SEED_SECRET` in your Render environment, then call it once:
 
-## Project structure
+  ```bash
+  curl -X POST https://your-backend.onrender.com/api/auth/seed-admin \
+    -H "x-seed-secret: <your ADMIN_SEED_SECRET value>"
+  ```
+
+  This creates `admin@internsetu.com` / `SuperSecretPassword123!` if no admin exists yet. **Log in immediately and treat that password as compromised on day one** — there's no forced-password-change flow in this scaffold, so rotate it manually via your database or add a "change password" endpoint before real use.
+
+- Every other route group (`/api/student`, `/api/industry`, `/api/educator`) is scoped by both `protect` (valid JWT) and `authorize(<role>)` (correct role) middleware, matching the resource to the account type.
+
+## Deployment Notes
+
+- **Backend (Render):** Deploy from `/backend`. Set `MONGO_URI`, `JWT_SECRET`, `CLIENT_URL` (comma-separated list — include your Vercel production URL), and `ADMIN_SEED_SECRET`. CORS also auto-allows any `*.vercel.app` origin so PR preview deployments work without extra config.
+- **Frontend (Vercel):** Deploy from `/frontend`. Set `VITE_API_BASE_URL` to your Render backend's `/api` URL (e.g. `https://internsetu-backend.onrender.com/api`). The Axios layer in `services/api.js` will still function correctly even if this is accidentally set without the `/api` suffix — it self-corrects via a request interceptor, but it's best to set it correctly.
+- Never commit `.env` files — only the provided `.env.example` files are included in this archive.
+
+## Core Features
+
+- JWT-based authentication with 4 roles: Student, Industry, Educator, Admin
+- Student profile management with auto-calculated profile completeness
+- Student dashboard with stats, recommended opportunities (skill-matched), and recent activity
+- Opportunity listing, filtering, and application flow
+- **Industry dashboard**: post opportunities, view own postings, review applicants, update applicant status (shortlisted/rejected/selected)
+- **Educator dashboard**: view student cohort with progress stats, create/publish courses
+- **AI Mock Interview**: chat-based interview practice with an AI recruiter persona, plus a scored evaluation (communication, role knowledge, confidence) with strengths/improvement feedback
+- AI controller with placeholder Gemini + Grok integrations (resume analysis, skill-gap suggestions, chat, interview evaluation) with automatic provider fallback
+- Protected routing on the frontend, role-aware dashboard routing
+- Professional Tailwind design system: `bg-slate-50` backgrounds, `indigo-900` primary accents, no dark mode / no "AI-glow" styling
+
+## API Route Map
 
 ```
-backend/
-  config/db.js              MongoDB connection
-  models/                   User, StudentProfile, StudentProgress, Opportunity, Course
-  middleware/auth.js        JWT verification + role-based access control
-  controllers/              auth, student, industry, educator, ai
-  routes/                   one router per controller, mounted in server.js
-  server.js                 Express app entrypoint
-
-frontend/
-  src/services/api.js       Axios instance + grouped API calls (authAPI, studentAPI, industryAPI, educatorAPI, aiAPI)
-  src/context/AuthContext.jsx  Login/register/logout state, persisted to localStorage
-  src/components/           ProtectedRoute, Navbar
-  src/pages/                AuthPage, StudentDashboard, IndustryDashboard, EducatorDashboard,
-                             GenericDashboard (admin fallback), MockInterview
-  src/App.jsx                Route table
+/api/auth        register (student-only), login, me, logout,
+                  seed-admin (secret-protected), admin/create-user (admin-only)
+/api/student      profile, dashboard, opportunities, progress, courses  (role: student)
+/api/industry     opportunities (CRUD), applicants, applicant status    (role: industry)
+/api/educator     students, courses (CRUD)                              (role: educator)
+/api/ai           resume-analysis, skill-gap, chat, mock-interview/evaluate
 ```
 
-## Notes / known limitations
+## Notes on the Educator "student cohort" query
 
-- `aiController.js` calls the Gemini and Grok HTTP APIs directly with `fetch` — double-check the endpoint/payload shape against current provider docs before relying on it in production; APIs do change.
-- There's no seed script — the database starts empty. Post at least one opportunity and one course (as industry/educator) before testing the student dashboard's "recommended opportunities" and course list.
-- `GenericDashboard` is what `admin` accounts land on — there's no dedicated admin UI or `adminController` yet.
-- CORS is locked to `CLIENT_URL` in `.env` — update it if you deploy the frontend somewhere other than `localhost:5173`.
+`educatorController.listStudents` currently scopes students by matching
+`StudentProfile.institution` against the logged-in educator's
+`User.institutionName`. This is a simple starting point — if you want stricter
+cohort assignment (e.g. an explicit `educator` reference on `StudentProfile`,
+or a many-to-many `Cohort` model), swap the query in that controller; the
+frontend `EducatorDashboard.jsx` doesn't need to change since it just
+consumes `GET /api/educator/students`.
+
+## Next Steps (not yet implemented — scaffolded for extension)
+
+- Admin: user & content moderation panel
+- Course content player (modules/lessons UI) for students
+- Persisting mock interview transcripts/scores to a history collection
+- Real-time notifications for status changes (shortlisted/selected)
