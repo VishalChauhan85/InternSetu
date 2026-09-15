@@ -14,6 +14,6 @@ router.use(protect);
 router.post('/resume-analysis', analyzeResume);
 router.post('/skill-gap', suggestSkillGap);
 router.post('/chat', chatAssistant);
-router.post('/mock-interview/evaluate', evaluateInterview);
+router.post('/evaluate-interview', evaluateInterview);
 
 module.exports = router;

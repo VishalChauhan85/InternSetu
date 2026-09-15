@@ -88,18 +88,13 @@ const StudentDashboard = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
-              Welcome back, {firstName}
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Here's a snapshot of your progress and opportunities on InternSetu.
-            </p>
-          </div>
-          <a href="/mock-interview" className="btn-primary !px-4 !py-2.5 text-sm shrink-0">
-            Practice a Mock Interview
-          </a>
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Welcome back, {firstName}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Here's a snapshot of your progress and opportunities on InternSetu.
+          </p>
         </div>
 
         {error && (
@@ -154,7 +149,7 @@ const StudentDashboard = () => {
                   <h2 className="text-base font-semibold text-slate-900">
                     Recommended Opportunities
                   </h2>
-                  <a
+                  
                     href="/opportunities"
                     className="text-xs font-medium text-indigo-900 hover:underline"
                   >

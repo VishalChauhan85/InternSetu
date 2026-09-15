@@ -1,12 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import Auth from './pages/Auth';
+import AuthPage from './pages/AuthPage';
 import StudentDashboard from './pages/StudentDashboard';
 import IndustryDashboard from './pages/IndustryDashboard';
 import EducatorDashboard from './pages/EducatorDashboard';
-import AdminDashboard from './pages/AdminDashboard';
 import GenericDashboard from './pages/GenericDashboard';
 import MockInterview from './pages/MockInterview';
+import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Routes to the correct dashboard based on the logged-in user's role
@@ -15,7 +15,6 @@ const DashboardRouter = () => {
   if (user?.role === 'student') return <StudentDashboard />;
   if (user?.role === 'industry') return <IndustryDashboard />;
   if (user?.role === 'educator') return <EducatorDashboard />;
-  if (user?.role === 'admin') return <AdminDashboard />;
   return <GenericDashboard />;
 };
 
@@ -23,8 +22,10 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/auth" element={<Auth />} />
+      <Route path="/auth" element={<AuthPage />} />
 
+      {/* Generic dashboard — resolves to the right one based on role.
+          Kept as a stable redirect target (e.g. after login). */}
       <Route
         path="/dashboard"
         element={
@@ -34,39 +35,46 @@ function App() {
         }
       />
 
-      {/* Role-restricted routes */}
+      {/* Dedicated per-role dashboard routes, used by the navbar's
+          role-based "Dashboard" link */}
       <Route
-        path="/student/*"
+        path="/student-dashboard"
         element={
           <ProtectedRoute allowedRoles={['student']}>
             <StudentDashboard />
           </ProtectedRoute>
         }
       />
-
       <Route
-        path="/industry/*"
+        path="/industry-dashboard"
         element={
           <ProtectedRoute allowedRoles={['industry']}>
             <IndustryDashboard />
           </ProtectedRoute>
         }
       />
-
       <Route
-        path="/educator/*"
+        path="/educator-dashboard"
         element={
           <ProtectedRoute allowedRoles={['educator']}>
             <EducatorDashboard />
           </ProtectedRoute>
         }
       />
-
       <Route
-        path="/admin/*"
+        path="/admin-dashboard"
         element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
+            <GenericDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />

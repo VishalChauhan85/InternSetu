@@ -1,27 +1,9 @@
 const Opportunity = require('../models/Opportunity');
 const StudentProfile = require('../models/StudentProfile');
 
-// @desc    List opportunities posted by the logged-in industry user
-// @route   GET /api/industry/opportunities
-// @access  Private (industry)
-const listMyOpportunities = async (req, res) => {
-  try {
-    const opportunities = await Opportunity.find({ postedBy: req.user._id }).sort({
-      createdAt: -1,
-    });
+const VALID_STATUSES = ['applied', 'shortlisted', 'rejected', 'selected'];
 
-    return res.status(200).json({
-      success: true,
-      count: opportunities.length,
-      opportunities,
-    });
-  } catch (error) {
-    console.error('listMyOpportunities error:', error.message);
-    return res.status(500).json({ success: false, message: 'Server error fetching your postings' });
-  }
-};
-
-// @desc    Create a new opportunity
+// @desc    Create a new opportunity posting
 // @route   POST /api/industry/opportunities
 // @access  Private (industry)
 const createOpportunity = async (req, res) => {
@@ -50,28 +32,22 @@ const createOpportunity = async (req, res) => {
       });
     }
 
-    const deadlineDate = new Date(applicationDeadline);
-    if (Number.isNaN(deadlineDate.getTime())) {
-      return res.status(400).json({ success: false, message: 'Invalid application deadline' });
-    }
-
     const opportunity = await Opportunity.create({
       postedBy: req.user._id,
       title,
-      companyName: companyName || req.user.companyName || req.user.name,
-      type: type || 'internship',
+      companyName: companyName || req.user.companyName,
+      type,
       description,
-      responsibilities: responsibilities || [],
-      requiredSkills: requiredSkills || [],
-      eligibility: eligibility || {},
-      location: location || 'Remote',
-      workMode: workMode || 'remote',
+      responsibilities,
+      requiredSkills,
+      eligibility,
+      location,
+      workMode,
       duration,
-      stipend: stipend || { amount: 0, isPaid: true },
-      openings: openings || 1,
-      applicationDeadline: deadlineDate,
-      status: 'open',
-      tags: tags || [],
+      stipend,
+      openings,
+      applicationDeadline,
+      tags,
     });
 
     return res.status(201).json({
@@ -85,78 +61,54 @@ const createOpportunity = async (req, res) => {
       const messages = Object.values(error.errors).map((e) => e.message);
       return res.status(400).json({ success: false, message: messages.join(', ') });
     }
-    return res.status(500).json({ success: false, message: 'Server error posting opportunity' });
+    return res.status(500).json({ success: false, message: 'Server error creating opportunity' });
   }
 };
 
-// @desc    Update an opportunity owned by the logged-in industry user
-// @route   PUT /api/industry/opportunities/:id
+// @desc    List opportunities posted by the logged-in industry user
+// @route   GET /api/industry/opportunities
 // @access  Private (industry)
-const updateOpportunity = async (req, res) => {
+const listMyOpportunities = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const opportunity = await Opportunity.findOne({ _id: id, postedBy: req.user._id });
-    if (!opportunity) {
-      return res.status(404).json({
-        success: false,
-        message: 'Opportunity not found or you do not have permission to edit it',
-      });
-    }
-
-    const allowedFields = [
-      'title',
-      'companyName',
-      'type',
-      'description',
-      'responsibilities',
-      'requiredSkills',
-      'eligibility',
-      'location',
-      'workMode',
-      'duration',
-      'stipend',
-      'openings',
-      'applicationDeadline',
-      'status',
-      'tags',
-    ];
-
-    allowedFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        opportunity[field] = req.body[field];
-      }
+    const opportunities = await Opportunity.find({ postedBy: req.user._id }).sort({
+      createdAt: -1,
     });
 
-    await opportunity.save();
+    // Surface an applicant count without shipping the full applicant list here
+    const shaped = opportunities.map((opp) => {
+      const obj = opp.toObject();
+      obj.applicantCount = obj.applicants?.length || 0;
+      delete obj.applicants;
+      return obj;
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'Opportunity updated successfully',
-      opportunity,
+      count: shaped.length,
+      opportunities: shaped,
     });
   } catch (error) {
-    console.error('updateOpportunity error:', error.message);
-    return res.status(500).json({ success: false, message: 'Server error updating opportunity' });
+    console.error('listMyOpportunities error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error fetching your postings' });
   }
 };
 
-// @desc    Get applicants for a specific opportunity owned by the logged-in industry user
+// @desc    Get applicants for a specific opportunity owned by this industry user
 // @route   GET /api/industry/opportunities/:id/applicants
 // @access  Private (industry)
 const getApplicants = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const opportunity = await Opportunity.findOne({ _id: id, postedBy: req.user._id }).populate(
-      'applicants.student',
-      'name email phone'
-    );
+    const opportunity = await Opportunity.findOne({
+      _id: id,
+      postedBy: req.user._id,
+    }).populate('applicants.student', 'name email phone');
 
     if (!opportunity) {
       return res.status(404).json({
         success: false,
-        message: 'Opportunity not found or you do not have permission to view it',
+        message: 'Opportunity not found or you do not have access to it',
       });
     }
 
@@ -172,47 +124,53 @@ const getApplicants = async (req, res) => {
   }
 };
 
-// @desc    Update an applicant's status on an opportunity
-// @route   PATCH /api/industry/opportunities/:id/applicants/:studentId
+// @desc    Update an applicant's status for an opportunity
+// @route   PUT /api/industry/opportunities/:id/applicants/:studentId
 // @access  Private (industry)
 const updateApplicantStatus = async (req, res) => {
   try {
     const { id, studentId } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['applied', 'shortlisted', 'rejected', 'selected'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status value' });
+    if (!VALID_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Status must be one of: ${VALID_STATUSES.join(', ')}`,
+      });
     }
 
     const opportunity = await Opportunity.findOne({ _id: id, postedBy: req.user._id });
     if (!opportunity) {
       return res.status(404).json({
         success: false,
-        message: 'Opportunity not found or you do not have permission to modify it',
+        message: 'Opportunity not found or you do not have access to it',
       });
     }
 
     const applicant = opportunity.applicants.find(
       (a) => a.student.toString() === studentId
     );
-
     if (!applicant) {
-      return res.status(404).json({ success: false, message: 'Applicant not found on this opportunity' });
+      return res.status(404).json({
+        success: false,
+        message: 'Applicant not found on this opportunity',
+      });
     }
 
     applicant.status = status;
     await opportunity.save();
 
-    // Keep the student's own profile record in sync
+    // Keep the student's own profile record in sync so their dashboard
+    // stats (applied/shortlisted/selected counts) stay accurate.
     await StudentProfile.updateOne(
-      { user: studentId, 'appliedOpportunities.opportunity': opportunity._id },
+      { user: studentId, 'appliedOpportunities.opportunity': id },
       { $set: { 'appliedOpportunities.$.status': status } }
     );
 
     return res.status(200).json({
       success: true,
       message: 'Applicant status updated successfully',
+      studentId,
       status,
     });
   } catch (error) {
@@ -222,9 +180,8 @@ const updateApplicantStatus = async (req, res) => {
 };
 
 module.exports = {
-  listMyOpportunities,
   createOpportunity,
-  updateOpportunity,
+  listMyOpportunities,
   getApplicants,
   updateApplicantStatus,
 };
