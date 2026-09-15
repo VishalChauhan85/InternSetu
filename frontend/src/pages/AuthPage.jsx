@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Input from '../components/Input';
 
 const ROLES = [
   { value: 'student', label: 'Student', desc: 'Explore internships & build your career' },
@@ -184,95 +185,71 @@ const AuthPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Jane Doe"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-900 focus:border-transparent"
-                />
-              </div>
+              <Input
+                label="Full Name"
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Jane Doe"
+                autoComplete="name"
+              />
             )}
 
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-900 focus:border-transparent"
-              />
-            </div>
+            <Input
+              label="Email Address"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
 
             {mode === 'register' && selectedRole === 'industry' && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Company Name
-                </label>
-                <input
-                  type="text"
-                  name="companyName"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  placeholder="Acme Corp"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-900 focus:border-transparent"
-                />
-              </div>
+              <Input
+                label="Company Name"
+                type="text"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
+                placeholder="Acme Corp"
+                autoComplete="organization"
+              />
             )}
 
             {mode === 'register' && selectedRole === 'educator' && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Institution Name
-                </label>
-                <input
-                  type="text"
-                  name="institutionName"
-                  value={formData.institutionName}
-                  onChange={handleChange}
-                  placeholder="ABC Institute of Technology"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-900 focus:border-transparent"
-                />
-              </div>
+              <Input
+                label="Institution Name"
+                type="text"
+                name="institutionName"
+                value={formData.institutionName}
+                onChange={handleChange}
+                placeholder="ABC Institute of Technology"
+                autoComplete="organization"
+              />
             )}
 
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-900 focus:border-transparent"
-              />
-            </div>
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
 
             {mode === 'register' && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-900 focus:border-transparent"
-                />
-              </div>
+              <Input
+                label="Confirm Password"
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
             )}
 
             {displayError && (

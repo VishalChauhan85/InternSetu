@@ -26,6 +26,90 @@
   }
 }
 
+/* ============================================================
+   Extension-injection containment
+   ------------------------------------------------------------
+   Password managers (LastPass, Dashlane, Bitwarden, 1Password)
+   and some antivirus/security suites inject their own icon
+   markup directly into the page next to form fields. That
+   markup ships with no reliable, stable selector we can target
+   (class names are often randomized or extension-specific), so
+   the fix here isn't "hide this exact element" — it's "make it
+   physically impossible for anything inside a form field wrapper
+   to render outside a small, fixed box."
+
+   Caveat: if a given extension renders its icon inside a CLOSED
+   shadow root, page CSS cannot reach the shadow DOM's *internal*
+   styles — but the containment rules below still clip/constrain
+   the shadow HOST element itself, because containment affects
+   the light-DOM box tree the host sits in, not what's inside its
+   shadow root. So this still works for the common case (an icon
+   or button appended near an input), even though we can't
+   guarantee it for every extension in existence.
+   ============================================================ */
+
+/* 1. Native browser autofill/reveal icons.
+      Uncomment only if you don't want the browser's own built-in
+      password-reveal / autofill icons either — this also removes
+      a small usability feature (click-to-reveal password), so it's
+      commented out by default. */
+/*
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-credentials-auto-fill-button,
+input::-webkit-strong-password-auto-fill-button,
+input::-webkit-caps-lock-indicator,
+input::-webkit-contacts-auto-fill-button {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+*/
+
+/* 2. Form-field containment shield.
+      Wrap every input in a container with this class (see the
+      <Input /> component) and any element an extension injects
+      inside that wrapper — icon, button, tooltip, whatever — is
+      hard-clipped to the wrapper's box and can never exceed it,
+      regardless of the injected element's own width/height/
+      position values (even position: fixed is contained once an
+      ancestor establishes containment, per the CSS Containment
+      spec). */
+.field-shield {
+  position: relative;
+  overflow: hidden;
+  contain: layout paint;
+  isolation: isolate;
+}
+
+/* Anything that isn't our own real input/label/textarea inside a
+   shielded field gets hard-capped in size and pushed behind the
+   actual field, and stops intercepting clicks. This is the
+   "nuclear" global safeguard the app doesn't otherwise need,
+   since this project has no legitimate large SVGs of its own
+   inside form fields today. */
+.field-shield > *:not(input):not(textarea):not(label):not(select) {
+  max-width: 24px !important;
+  max-height: 24px !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+}
+
+/* 3. Belt-and-suspenders: even outside .field-shield, never let a
+      bare, unstyled <svg> or <img> that isn't part of our own
+      component library render larger than a normal icon. Our own
+      icons should always carry an explicit Tailwind size class
+      (e.g. h-4 w-4) — real classes always win over this because
+      Tailwind's utility classes are more specific / load after
+      this rule in the cascade. This line is what actually stops
+      an untargeted injected SVG from rendering at its raw,
+      oversized intrinsic/viewBox dimensions. */
+svg:not([class*='h-']):not([class*='w-']),
+img:not([class*='h-']):not([class*='w-']) {
+  max-width: 24px;
+  max-height: 24px;
+}
+
 /* Custom scrollbar - subtle, professional */
 ::-webkit-scrollbar {
   width: 8px;
